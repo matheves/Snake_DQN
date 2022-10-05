@@ -1,118 +1,127 @@
 # -*- coding: utf-8 -*-
-"""
-Created on Thu Mar 18 15:44:11 2021
-
-@author: lele8
-"""
 
 import sys, pygame, random
-
-BLACK = (0, 0, 0)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-PANNEL_HEIGHT = 100
-WINDOW_WIDTH = 400
-WINDOW_HEIGHT = WINDOW_WIDTH + PANNEL_HEIGHT
+from enum import Enum
+import torch
 
 
-BLOCKSIZE = 20 #Set the size of the grid block
+class Case_Content(Enum):
+    EMPTY = 1
+    BODY = 2
+    HEAD = 3
+    APPLE = 4
 
+class Action(Enum):
+    DOWN = 1
+    UP = 2
+    RIGHT = 3
+    LEFT = 4
 
-def main():
-    global SCREEN, CLOCK
-    pygame.init()
-    SCREEN = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
-    pygame.display.update()
-    pygame.display.set_caption('Snake IA')
-    game_over=False
-    
-    SCREEN.fill(WHITE)
-    #drawGrid()
-    rect = pygame.Rect(0, PANNEL_HEIGHT, WINDOW_WIDTH, WINDOW_WIDTH)
-    pygame.draw.rect(SCREEN, BLACK, rect)
-    
-   
-    score = 0
-    drawScore(score)
-    
-    x1_change = 0       
-    y1_change = 0
-    
-    snake = [[10,10]]
-    apple = createApple(snake)
-    
-    CLOCK = pygame.time.Clock()
-    while not game_over:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                game_over = True
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    x1_change = -1
-                    y1_change = 0
-                elif event.key == pygame.K_RIGHT:
-                    x1_change = 1
-                    y1_change = 0
-                elif event.key == pygame.K_UP:
-                    y1_change = -1
-                    x1_change = 0
-                elif event.key == pygame.K_DOWN:
-                    y1_change = 1
-                    x1_change = 0
-                          
-        
-        snake.append([snake[-1][0]+x1_change, snake[-1][1]+y1_change])
-        drawRect(snake[-1][0], snake[-1][1], GREEN)
-        
-        if(snake[-1] != apple):
-            if snake[-1] in snake[0:-2] or snake[-1][0] in [-1,WINDOW_WIDTH//BLOCKSIZE] or snake[-1][1] in [-1,WINDOW_WIDTH//BLOCKSIZE]:
-                SCREEN.fill(BLACK)
-                game_over = True
-                print("Score:" + str(score))
-            lost_tail = snake.pop(0)
-            drawRect(lost_tail[0], lost_tail[1], BLACK)
-        else:
-            score += 1
-            drawScore(score)
-            apple = createApple(snake)
-        
+class Snake_Game():
+
+    BLACK = (0, 0, 0)
+    WHITE = (255, 255, 255)
+    RED = (255, 0, 0)
+    GREEN = (0, 255, 0)
+
+    def __init__(self, pannel_height, width, block_size):
+        # init layout and grid parameters
+        self.height_pannel = pannel_height
+        self.height_screen = width + self.height_pannel
+        self.width_screen = width
+        self.block_size = block_size
+        # Pygame init
+        pygame.init()
+        self.screen = pygame.display.set_mode((self.width_screen, self.height_screen))
+        pygame.display.set_caption("DQL Snake AI")
+        self.clock = pygame.time.Clock()
+        self.reset()
         pygame.display.update()
-            
-        CLOCK.tick(8)
-     
-    pygame.quit()
-  
-def createApple(snake):
-    apple = [-1, -1]
-    applex = -1
-    appley = -1
-    while apple == [-1, -1] or apple in snake:
-        applex = random.randint(0, WINDOW_WIDTH//BLOCKSIZE-1)
-        appley = random.randint(0, (WINDOW_HEIGHT-PANNEL_HEIGHT)//BLOCKSIZE-1)
-        apple = [applex, appley]
-    print(apple)
-    drawRect(apple[0], apple[1], RED)
-    return apple
+        
 
+    def create_apple(self):
+        apple = [-1, -1]
+        applex = -1
+        appley = -1
+        while apple == [-1, -1] or apple in self.snake:
+            applex = random.randint(0, self.width_grid-1)
+            appley = random.randint(0, self.height_grid-1)
+            apple = [applex, appley]
+        self.grid[apple[1], apple[0]] = Case_Content.APPLE.value
+        self.drawRect(apple[0], apple[1], self.RED)
+        return apple
 
-def drawGrid():
-    for x in range(WINDOW_WIDTH):
-        for y in range(WINDOW_HEIGHT):
-            rect = pygame.Rect(x*BLOCKSIZE, y*BLOCKSIZE, BLOCKSIZE, BLOCKSIZE)
-            pygame.draw.rect(SCREEN, WHITE, rect, 1)
+    def drawGrid(self):
+        for x in range(self.width_screen):
+            for y in range(self.height_screen):
+                rect = pygame.Rect(x*self.block_size, y*self.block_size, self.block_size, self.block_size)
+                pygame.draw.rect(self.screen, self.WHITE, rect, 1)
             
-def drawRect(x, y, color):
-    rect = pygame.Rect(x*BLOCKSIZE+1, y*BLOCKSIZE+1 + PANNEL_HEIGHT, BLOCKSIZE-2, BLOCKSIZE-2)
-    pygame.draw.rect(SCREEN, color, rect)
+    def drawRect(self, x, y, color):
+        rect = pygame.Rect(x*self.block_size+1, y*self.block_size+1 + self.height_pannel, self.block_size-2, self.block_size-2)
+        pygame.draw.rect(self.screen, color, rect)
  
             
-def drawScore(score):
-    rect = pygame.Rect(0, 0, WINDOW_WIDTH, PANNEL_HEIGHT)
-    pygame.draw.rect(SCREEN, WHITE, rect)
+    def drawScore(self):
+        rect = pygame.Rect(0, 0, self.width_screen, self.height_pannel)
+        pygame.draw.rect(self.screen, self.WHITE, rect)
     
-    font = pygame.font.SysFont(None, 24)
-    fontScore = font.render("Score: " + str(score), True, BLACK)
-    SCREEN.blit(fontScore, (20, 20))
-            
-main()
+        font = pygame.font.SysFont(None, 24)
+        fontScore = font.render("Score: " + str(self.score), True, self.BLACK)
+        self.screen.blit(fontScore, (20, 20))
+
+    def move_snake(self, x, y):
+        if (len(self.snake) > 1):
+            for block in self.snake:
+                self.grid[block[1], block[0]] = Case_Content.BODY.value
+
+        self.grid[self.snake[-1][1]+y, self.snake[-1][0]+x] = Case_Content.HEAD.value
+        self.snake.append([self.snake[-1][0]+x, self.snake[-1][1]+y])
+        self.drawRect(self.snake[-1][0], self.snake[-1][1], self.GREEN)
+
+        if (self.snake[-1] != self.apple):
+            if self.snake[-1] in self.snake[0:-2] or self.snake[-1][0] in [-1,self.width_grid] or self.snake[-1][1] in [-1,self.width_grid]:
+                self.screen.fill(self.BLACK)
+                self.game_over = True
+                print("Score:" + str(self.score))
+            lost_tail = self.snake.pop(0)
+            self.grid[lost_tail[1], lost_tail[0]] = Case_Content.EMPTY.value
+            self.drawRect(lost_tail[0], lost_tail[1],self.BLACK)
+        else:
+            self.score += 1
+            self.drawScore()
+            self.grid[self.apple[1], self.apple[0]] = Case_Content.HEAD.value
+            self.apple = self.create_apple()
+
+    def update(self):
+        pygame.display.update()
+
+    def quit(self):
+        pygame.quit()
+
+    def get_events(self):
+        return pygame.event.get()
+    
+    def reset(self):
+
+        self.height_grid = (self.height_screen - self.height_pannel) // self.block_size
+        self.width_grid = self.width_screen // self.block_size
+        
+        # Create grid as a tensor for our DQL model
+        grid = [[1]*(self.width_grid+1)]*(self.height_grid+1)
+        self.grid = torch.IntTensor(grid)
+
+        # Init game attributes
+        self.game_over = False
+        self.score = 0
+        # Create Snake
+        self.snake = [[self.height_grid // 2, self.width_grid // 2]]
+        # Update grid with snake position
+        self.grid[self.height_grid // 2, self.width_grid // 2] = Case_Content.HEAD.value
+        # Create Apple
+        self.apple = self.create_apple()
+        # Update grid with apple position
+        self.grid[self.apple[1], self.apple[0]] = Case_Content.APPLE.value
+        self.drawScore()
+
+   
