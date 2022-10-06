@@ -107,9 +107,9 @@ class DQN_Snake:
             non_final_next_states = Variable(torch.cat([s for s in batch.next_state
                                                     if s is not None]),
                                         volatile=True)
-            state_batch = Variable(torch.cat(batch.state))
-            action_batch = Variable(torch.cat(batch.action))
-            reward_batch = Variable(torch.cat(batch.reward))
+            state_batch = torch.cat(batch.state)
+            action_batch = torch.tensor(batch.action)
+            reward_batch = torch.tensor(batch.reward)
 
             # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
             # columns of actions taken
