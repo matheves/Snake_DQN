@@ -47,12 +47,13 @@ class Snake_Game():
         self.block_size = block_size
         self.eaten = False
         self.mode = mode
-        # Pygame init        
+        self.episode = -1
+        # Pygame init      
+        
         if self.mode == "human":
             pygame.init()
             pygame.display.init()
             self.screen = pygame.display.set_mode((self.width_screen, self.height_screen))
-            
             pygame.display.set_caption("DQL Snake AI")
             pygame.display.update()
 
@@ -65,7 +66,8 @@ class Snake_Game():
          
         self.reset()
         self.render()
-        pygame.display.update()
+        if self.mode == "human":
+            pygame.display.update()
         
     def empty_blocks(self):
         emptys = []
@@ -101,7 +103,7 @@ class Snake_Game():
         pygame.draw.rect(self.surf, self.WHITE, rect)
     
         font = pygame.font.SysFont(None, 24)
-        fontScore = font.render("Score: " + str(self.score), True, self.BLACK)
+        fontScore = font.render("Episode: " + str(self.episode) + " - Score: " + str(self.score), True, self.BLACK)
         self.surf.blit(fontScore, (20, 20))
 
     def move_snake(self, action):
@@ -150,6 +152,7 @@ class Snake_Game():
         # Init game attributes
         self.game_over = False
         self.score = 0
+        self.episode += 1
         # Create Snake
         self.snake = [[self.height_grid // 2, self.width_grid // 2]]
         self.drawRect(self.snake[-1][1], self.snake[-1][0], self.GREEN_HEAD)
@@ -157,7 +160,8 @@ class Snake_Game():
         self.grid[self.height_grid // 2, self.width_grid // 2] = Case_Content.HEAD.value
         # Create Apple
         self.apple = self.create_apple()
-
+            
+        
         self.drawScore()
         
     def step(self, action):

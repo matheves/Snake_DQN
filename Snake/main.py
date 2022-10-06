@@ -1,6 +1,7 @@
 from DQN import DQN_Snake
 from snake import Action
 from snake import Snake_Game
+from matplotlib import pyplot as plt
 import pygame
 
 PANNEL_HEIGHT = 100
@@ -9,7 +10,7 @@ BLOCKSIZE = 20
 TICK = 8
 NUM_EPISODE = 50
 
-game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "human")
+game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "rgb_array")
 
 episode= 0
 x_change = 0
@@ -25,7 +26,10 @@ while episode < NUM_EPISODE:
         action = model.select_action(game.grid)
         state, next_state, reward, done = game.step(list(Action)[action])
         model.memory.push(state, action.item(), next_state, reward, done)
-        game.render()          
+        render = game.render()
+
+        plt.imshow(render)
+        plt.show()
     episode += 1
     if (episode % 5 == 0):
         print("training day")
