@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 
+from asyncio import events
 from re import I
 import sys, pygame, random
+from turtle import Screen
 from enum import Enum
 import torch
+import numpy as np
 
 
 class Case_Content(Enum):
@@ -32,6 +35,7 @@ class Snake_Game():
     WHITE = (255, 255, 255)
     RED = (255, 0, 0)
     GREEN = (0, 255, 0)
+    GREENHEAD = (9,82,40)
     eaten = False
 
     def __init__(self, pannel_height, width, block_size):
@@ -69,7 +73,14 @@ class Snake_Game():
             for y in range(self.height_screen):
                 #rect = pygame.Rect(x*self.block_size, y*self.block_size, self.block_size, self.block_size)
                 #pygame.draw.rect(self.surf, self.WHITE, rect, 1)
-                self.drawRect(self.grid[i][j], self.grid[i][j], self.GREEN)
+                if(self.grid[x][y] == Case_Content.EMPTY.value):
+                    self.drawRect(x,y, self.BLACK)
+                elif(self.grid[x][y] == Case_Content.BODY.value):
+                    self.drawRect(x,y, self.GREEN)
+                elif(self.grid[x][y] == Case_Content.APPLE.value):
+                    self.drawRect(x,y, self.RED)
+                else:            
+                    self.drawRect(x, y, self.GREENHEAD)
             
     def drawRect(self, x, y, color):
         rect = pygame.Rect(x*self.block_size+1, y*self.block_size+1 + self.height_pannel, self.block_size-2, self.block_size-2)
@@ -153,15 +164,25 @@ class Snake_Game():
         return prestate, self.grid, reward, self.game_over
     
     def render(self, render_mode):
-
-        if self.render_mode == "human":
+        if render_mode == "human" and self.screen is None:
             pygame.init()
             pygame.display.init()
             self.screen = pygame.display.set_mode((self.width_screen, self.height_screen))
             pygame.display.set_caption("DQL Snake AI")
+        
         self.clock = pygame.time.Clock()
         self.surf = pygame.Surface((self.width_screen, self.height_screen))
         
+        self.drawGrid()
+        
+        if render_mode == "human":
+            assert self.screen is not None
+            pygame.event.pump()
+            self.clock.tick(50)
+            pygame.display.flip()
+            self.update()
+        elif render_mode == "rgb_array":
+            np.transpose(np.array(pygame.surfarray.pixels3d(self.surf)), axes=(1,0,2))
         return
     
 

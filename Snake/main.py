@@ -1,4 +1,5 @@
 from DQN import DQN_Snake
+from Snake.snake import Action
 from snake import Snake_Game
 import pygame
 
@@ -15,7 +16,7 @@ x_change = 0
 y_change = 0
 
 model = DQN_Snake(game.height_grid, game.width_grid, 5)
-
+action = Action.UP
 while episode < NUM_EPISODE:
     state = game.grid
     while not game.game_over:
@@ -25,21 +26,16 @@ while episode < NUM_EPISODE:
                 episode = NUM_EPISODE
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    x_change = -1
-                    y_change = 0
+                    action = Action.LEFT
                 elif event.key == pygame.K_RIGHT:
-                    x_change = 1
-                    y_change = 0
+                    action = Action.RIGHT
                 elif event.key == pygame.K_UP:
-                    x_change = 0
-                    y_change = -1
+                    action = Action.UP
                 elif event.key == pygame.K_DOWN:
-                    x_change = 0
-                    y_change = 1
-                        
-        game.move_snake(x_change, y_change)
-        game.update()
-        game.clock.tick(TICK)
+                    action = Action.DOWN
+
+        game.step(action)
+        game.render("human")          
     episode += 1
     game.reset()
 game.quit()
