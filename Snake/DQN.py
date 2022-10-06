@@ -4,11 +4,12 @@ import math
 from collections import namedtuple, deque
 
 Transition = namedtuple('Transition',
-                        ('state', 'action', 'next_state', 'reward'))
+                        ('state', 'action', 'next_state', 'reward', 'done'))
 
 class ReplayMemory(object):
 
     def __init__(self, capacity):
+        self.capacity = capacity
         self.memory = deque([],maxlen=capacity)
 
     def push(self, *args):
@@ -37,16 +38,20 @@ class DQN(torch.nn.Module):
         # and therefore the input image size, so compute it.
         def conv2d_size_out(size, kernel_size = 5, stride = 2):
             return (size - (kernel_size - 1) - 1) // stride  + 1
+
         convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
         convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
+
         linear_input_size = convw * convh * 32
-        self.head = torch.nn.Linear(linear_input_size, outputs)
+        self.fc1 = torch.nn.Linear(linear_input_size, 128)
+        self.head = torch.nn.Linear(128, outputs)
 
     def forward(self, x):
         x = x.to(self.device)
         x = torch.nn.ReLU(self.bn1(self.conv1(x)))
         x = torch.nn.ReLU(self.bn2(self.conv2(x)))
         x = torch.nn.ReLU(self.bn3(self.conv3(x)))
+        x = torch.nn.ReLU(self.fc1(x))
         return self.head(x.view(x.size(0), -1))
 
 class DQN_Snake:
@@ -57,17 +62,15 @@ class DQN_Snake:
     EPS_END = 0.05
     EPS_DECAY = 200
     TARGET_UPDATE = 10
+    LEARNING_RATE = 0.5
 
     def __init__(self, height, width, n_actions):
         self.n_actions = n_actions
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.episode_duration = []
-        self.policy_net = DQN(height, width, n_actions).to(self.device)
-        self.target_net = DQN(height, width, n_actions).to(self.device)
-        self.target_net.load_state_dict(self.policy_net.state_dict())
-        self.target_net.eval()
+        self.dqn = DQN(height, width, n_actions).to(self.device)
 
-        self.optimizer = torch.optim.RMSprop(self.policy_net.parameters())
+        self.optimizer = torch.optim.Adam(self.dqn.parameters(), lr= self.LEARNING_RATE)
         self.memory = ReplayMemory(10000)
         self.step_done = 0
 
@@ -77,9 +80,7 @@ class DQN_Snake:
             math.exp(-1. * self.steps_done / self.EPS_DECAY)
         step_done += 1
         if sample > eps_threshold:
-            with torch.no_grad():
-                #Pick action with the larger expected reward
-                return self.policy_net(state).max(1)[1].view(1, 1)
+            return torch.argmax(self.dqn(state))
         else:
             return torch.tensor([[random.randrange(self.n_actions)]], device=self.device, dtype=torch.int32)
 
@@ -92,6 +93,12 @@ class DQN_Snake:
         # to Transition of batch-arrays.
         batch = Transition(*zip(*transitions))
 
+        self.optimizer.zero_grad()
+
+        target = batch.reward + torch.mul((self.gamma * self.dqn(batch.next_state).max(1).values.unsqueeze(1)), 1 - batch.done)
+        current = self.dqn(batch.state).gather(1, batch.action.long())
+
+        '''
         # Compute a mask of non-final states and concatenate the batch elements
         # (a final state would've been the one after which simulation ended)
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
@@ -129,3 +136,4 @@ class DQN_Snake:
         for param in self.policy_net.parameters():
             param.grad.data.clamp_(-1, 1)
         self.optimizer.step()
+        '''
