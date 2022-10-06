@@ -145,7 +145,7 @@ class Snake_Game():
         
         # Create grid as a tensor for our DQL model
         grid = [[1]*(self.width_grid+1)]*(self.height_grid+1)
-        self.grid = torch.IntTensor(grid)
+        self.grid = torch.FloatTensor(grid)
 
         # Init game attributes
         self.game_over = False
@@ -178,7 +178,7 @@ class Snake_Game():
         if self.mode == "human":
             assert self.screen is not None
             self.screen.blit(self.surf, (0, 0))
-            self.clock.tick(7)
+            self.clock.tick(60)
             pygame.display.update()
             
         elif self.mode == "rgb_array":

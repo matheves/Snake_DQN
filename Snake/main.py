@@ -21,7 +21,21 @@ model = DQN_Snake(game.height_grid, game.width_grid, 5)
 while episode < NUM_EPISODE:
     state = game.grid
     action = Action.STATIC
-    while not game.game_over:
+    while not game.game_over: 
+        action = model.select_action(game.grid)
+        print(action)
+        state, next_state, reward, done = game.step(list(Action)[action])
+        model.memory.push(state, action, next_state, reward, done)
+        game.render()          
+    episode += 1
+    if (episode % 5 == 0):
+        print("training day")
+        model.train_model()
+    game.reset()
+game.quit()
+
+
+'''
         for event in game.get_events():
             if event.type == pygame.QUIT:
                 game.game_over = True
@@ -34,14 +48,5 @@ while episode < NUM_EPISODE:
                 elif event.key == pygame.K_UP:
                     action = Action.UP
                 elif event.key == pygame.K_DOWN:
-                    action = Action.DOWN
-
-        game.step(action)
-        game.render()          
-    episode += 1
-    game.reset()
-game.quit()
-
+                    action = Action.DOWN  
 '''
-        
-    '''
