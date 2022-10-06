@@ -1,6 +1,6 @@
 from DQN import DQN_Snake
-from snake2 import Action
-from snake2 import Snake_Game
+from snake import Action
+from snake import Snake_Game
 import pygame
 
 PANNEL_HEIGHT = 100
