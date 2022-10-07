@@ -10,13 +10,13 @@ BLOCKSIZE = 20
 TICK = 8
 NUM_EPISODE = 50
 
-game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "rgb_array")
+game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "human")
 
 episode= 0
 x_change = 0
 y_change = 0
 
-model = DQN_Snake(game.height_grid, game.width_grid, 5)
+model = DQN_Snake(game.height_grid, game.width_grid, 4)
 
 
 while episode < NUM_EPISODE:
@@ -27,9 +27,6 @@ while episode < NUM_EPISODE:
         state, next_state, reward, done = game.step(list(Action)[action])
         model.memory.push(state, action.item(), next_state, reward, done)
         render = game.render()
-
-        plt.imshow(render)
-        plt.show()
     episode += 1
     if (episode % 5 == 0):
         print("training day")

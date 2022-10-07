@@ -49,10 +49,10 @@ class Snake_Game():
         self.mode = mode
         self.episode = -1
         # Pygame init      
-        
+        pygame.init()
+        pygame.display.init()
+
         if self.mode == "human":
-            pygame.init()
-            pygame.display.init()
             self.screen = pygame.display.set_mode((self.width_screen, self.height_screen))
             pygame.display.set_caption("DQL Snake AI")
             pygame.display.update()
@@ -182,7 +182,7 @@ class Snake_Game():
         if self.mode == "human":
             assert self.screen is not None
             self.screen.blit(self.surf, (0, 0))
-            self.clock.tick(60)
+            self.clock.tick(20)
             pygame.display.update()
             
         elif self.mode == "rgb_array":
