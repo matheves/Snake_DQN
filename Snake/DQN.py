@@ -1,7 +1,7 @@
+from numpy import dtype
 import torch
 import random
 import math
-import numpy as np
 from collections import namedtuple, deque
 from torch.autograd import Variable
 
@@ -27,30 +27,33 @@ class DQN(torch.nn.Module):
 
     def __init__(self, h, w, outputs):
         super(DQN, self).__init__()
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, stride=2, padding=2)
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=16, kernel_size=4, stride=1)
         self.bn1 = torch.nn.BatchNorm2d(16)
-        self.conv2 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2)
+        self.conv2 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1)
         self.bn2 = torch.nn.BatchNorm2d(32)
-        self.conv3 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
-        self.bn3 = torch.nn.BatchNorm2d(32)
-        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = "cpu"
+        #self.conv3 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
+        #self.bn3 = torch.nn.BatchNorm2d(32)
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.device = "cpu"
         # Number of Linear input connections depends on output of conv2d layers
         # and therefore the input image size, so compute it.
         def conv2d_size_out(size, kernel_size = 3, stride = 2):
             return (size - (kernel_size - 1) - 1) // stride  + 1
 
-        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
-        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
+        #convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
+        #convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
+
+        convw = conv2d_size_out(conv2d_size_out(w))
+        convh = conv2d_size_out(conv2d_size_out(h))
 
         linear_input_size = convw * convh * 32
-        self.head = torch.nn.Linear(linear_input_size * 4, outputs)
+        self.head = torch.nn.Linear(linear_input_size * 16, outputs)
 
     def forward(self, x):
         x = x.to(self.device)
         x = torch.nn.functional.relu(self.bn1(self.conv1(x)))
         x = torch.nn.functional.relu(self.bn2(self.conv2(x)))
-        x = torch.nn.functional.relu(self.bn3(self.conv3(x)))
+        #x = torch.nn.functional.relu(self.bn3(self.conv3(x)))
         x = self.head(x.view(x.size(0), -1))
         return x
 
@@ -58,16 +61,15 @@ class DQN_Snake:
 
     BATCH_SIZE = 256
     GAMMA = 0.999
-    EPS_START = 0.9
+    EPS_START = 0.95
     EPS_END = 0.05
-    EPS_DECAY = 100
+    EPS_DECAY = 200
     TARGET_UPDATE = 10
-    LEARNING_RATE = 0.5
+    LEARNING_RATE = 0.9
 
     def __init__(self, height, width, n_actions):
         self.n_actions = n_actions
-        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = "cpu"
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.episode_duration = []
         self.dqn = DQN(height, width, n_actions).to(self.device)
 
@@ -93,13 +95,15 @@ class DQN_Snake:
 
     def train_model(self):
         if len(self.memory) < self.BATCH_SIZE:
+            print("Missing some state to start training")
             return
+        print("Start training")
         transitions = self.memory.sample(self.BATCH_SIZE)
 
         batch = Transition(*zip(*transitions))
 
-        non_final_mask = torch.ByteTensor(tuple(map(lambda s: s is not None,
-                                          batch.next_state)))
+        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
+                                          batch.next_state)), dtype=bool)
 
         # We don't want to backprop through the expected action values and volatile
         # will save us on temporarily changing the model parameters'
@@ -107,8 +111,8 @@ class DQN_Snake:
         #with torch.no_grad():
         non_final_next_states = torch.stack(batch.next_state)
             
-            #state_batch = batch.state #[[256][21][21]]
-            #state_batch = np.array(list(batch.state), dtype=np.int32)
+        #state_batch = batch.state #[[256][21][21]]
+        #state_batch = np.array(list(batch.state), dtype=np.int32)
         state_batch = torch.stack(batch.state)
         action_batch = torch.tensor(batch.action)
         reward_batch = torch.tensor(batch.reward)
@@ -131,6 +135,10 @@ class DQN_Snake:
         # requires_grad=False
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * self.GAMMA) + reward_batch #[n_batch][curennt_pred][prev_pred]
+        expected_state_action_values = torch.unsqueeze(expected_state_action_values, 1)
+
+        print("shape input : ", state_action_values.shape)
+        print("shape target : ", expected_state_action_values.shape)
 
         # Compute Huber loss
         loss = torch.nn.functional.smooth_l1_loss(state_action_values, expected_state_action_values)

@@ -20,17 +20,17 @@ class Case_Content(Enum):
     APPLE = 4
 
 class Action(Enum):
-    STATIC = [0, 0]
     DOWN = [1, 0]
     UP = [-1, 0]
     RIGHT = [0, 1]
     LEFT = [0, -1]
     
 class Rewards(Enum):
-    DEATH = -100
+    DEATH = -300
     ALIVE = 0
     CLOSER = 2
-    APPLE = 100
+    FURTHER = -3
+    APPLE = 200
 
 class Snake_Game():
 
@@ -49,6 +49,7 @@ class Snake_Game():
         self.eaten = False
         self.mode = mode
         self.episode = -1
+        self.max_score = 0
         # Pygame init      
         pygame.init()
         pygame.display.init()
@@ -122,6 +123,8 @@ class Snake_Game():
                 self.surf.fill(self.BLACK)
                 self.game_over = True
                 print("Score:" + str(self.score))
+                if (self.score > self.max_score):
+                    self.max_score = self.score
             lost_tail = self.snake.pop(0)
             self.grid[lost_tail[0], lost_tail[1]] = Case_Content.EMPTY.value
             self.drawRect(lost_tail[1], lost_tail[0],self.BLACK)
@@ -136,6 +139,7 @@ class Snake_Game():
         pygame.display.update()
 
     def quit(self):
+        print("session max score : ", self.max_score)
         pygame.quit()
 
     def get_events(self):
@@ -192,7 +196,7 @@ class Snake_Game():
                 if distance_after < distance_before:
                     reward = Rewards.CLOSER.value
                 else:
-                    reward = -Rewards.CLOSER.value
+                    reward = Rewards.FURTHER.value
             
             
         return prestate, self.grid, reward, self.game_over
@@ -201,7 +205,7 @@ class Snake_Game():
         if self.mode == "human":
             assert self.screen is not None
             self.screen.blit(self.surf, (0, 0))
-            self.clock.tick(20)
+            self.clock.tick(10)
             pygame.display.update()
             
         elif self.mode == "rgb_array":
