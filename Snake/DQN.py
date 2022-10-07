@@ -33,8 +33,8 @@ class DQN(torch.nn.Module):
         self.bn2 = torch.nn.BatchNorm2d(32)
         self.conv3 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
         self.bn3 = torch.nn.BatchNorm2d(32)
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = "cpu"
         # Number of Linear input connections depends on output of conv2d layers
         # and therefore the input image size, so compute it.
         def conv2d_size_out(size, kernel_size = 3, stride = 2):
@@ -58,15 +58,16 @@ class DQN_Snake:
 
     BATCH_SIZE = 256
     GAMMA = 0.999
-    EPS_START = 1
-    EPS_END = 0.5
-    EPS_DECAY = 1000
+    EPS_START = 0.9
+    EPS_END = 0.05
+    EPS_DECAY = 100
     TARGET_UPDATE = 10
     LEARNING_RATE = 0.5
 
     def __init__(self, height, width, n_actions):
         self.n_actions = n_actions
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = "cpu"
         self.episode_duration = []
         self.dqn = DQN(height, width, n_actions).to(self.device)
 

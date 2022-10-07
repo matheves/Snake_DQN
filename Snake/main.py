@@ -8,9 +8,9 @@ PANNEL_HEIGHT = 100
 WINDOW_WIDTH = 400
 BLOCKSIZE = 20
 TICK = 8
-NUM_EPISODE = 50
+NUM_EPISODE = 1000
 
-game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "human")
+game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "rgb_array")
 
 episode= 0
 x_change = 0
@@ -27,6 +27,8 @@ while episode < NUM_EPISODE:
         state, next_state, reward, done = game.step(list(Action)[action])
         model.memory.push(state, action.item(), next_state, reward, done)
         render = game.render()
+        plt.imshow(render)
+        plt.show()
     episode += 1
     if (episode % 5 == 0):
         print("training day")

@@ -11,7 +11,7 @@ import sys, pygame, random
 from enum import Enum
 import torch
 import numpy as np
-
+import math
 
 class Case_Content(Enum):
     EMPTY = 1
@@ -27,9 +27,10 @@ class Action(Enum):
     LEFT = [0, -1]
     
 class Rewards(Enum):
-    DEATH = -1
+    DEATH = -100
     ALIVE = 0
-    APPLE = 1
+    CLOSER = 2
+    APPLE = 100
 
 class Snake_Game():
 
@@ -164,17 +165,35 @@ class Snake_Game():
         
         self.drawScore()
         
+        
+    def calcul_distance(self, head, apple):
+        return math.sqrt(pow(head[0] - apple[0], 2) + pow(head[1] - apple[1], 2))
+        
     def step(self, action):
         prestate = self.grid.clone()
-        self.move_snake(action)
+        head_before = self.snake[-1].copy()
+        
         reward = Rewards.ALIVE.value
+        self.move_snake(action)
+        
+        
 
         if(self.game_over):
             reward = Rewards.DEATH.value
         
-        if(self.eaten):
+        elif(self.eaten):
             reward = Rewards.APPLE.value
             self.eaten = False
+        else:
+            if len(self.snake) < 5:
+                distance_before = self.calcul_distance(head_before, self.apple)
+                head_after = self.snake[-1]
+                distance_after = self.calcul_distance(head_after, self.apple)
+                if distance_after < distance_before:
+                    reward = Rewards.CLOSER.value
+                else:
+                    reward = -Rewards.CLOSER.value
+            
             
         return prestate, self.grid, reward, self.game_over
 
