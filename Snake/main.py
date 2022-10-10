@@ -3,24 +3,25 @@ from snake import Action
 from snake import Snake_Game
 from matplotlib import pyplot as plt
 
-PANNEL_HEIGHT = 80
-WINDOW_WIDTH = 160
+PANNEL_HEIGHT = 100
+WINDOW_WIDTH = 400
 BLOCKSIZE = 20
 TICK = 8
-NUM_EPISODE = 200
+NUM_EPISODE = 50
 MODE = "Training" # Training or Eval
 
-game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "human")
+game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "rgb_array")
 
 episode= 0
 x_change = 0
 y_change = 0
 score = []
 epoch = 1
+file = open("result.txt", "a")
 
 model = DQN_Snake(game.height_grid, game.width_grid, 4)
-#model.load_model("./model.pt")
-#model.load_optimizer("./optimizer.pt")
+model.load_model("./sam_model.pt")
+model.load_optimizer("./sam_optimizer.pt")
 
 if (MODE == "Training"):
     model.dqn.train()
@@ -39,13 +40,16 @@ while episode < NUM_EPISODE:
     model.train_model()
     episode += 1
     score.append(game.score)
-    if (episode % 100 == 0):
+    if (episode % 5 == 0):
         model.save_model()
         model.save_optimizer()
-        print("epoch ", epoch, " : mean score : ", sum(score) / len(score), " max score : ", max(score))
+        result = "epoch : {} mean score : {} max score : {} \n".format(epoch, sum(score) / len(score), max(score))
+        print(result)
+        file.write(result)
         epoch += 1
         score = []
     game.reset()
+file.close()
 game.quit()
 
 

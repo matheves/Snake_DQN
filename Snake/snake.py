@@ -26,8 +26,8 @@ class Action(Enum):
 class Rewards(Enum):
     DEATH = -100
     ALIVE = 1
-    CLOSER = 0
-    FURTHER = 0
+    CLOSER = 5
+    FURTHER = -5
     APPLE = 0
 
 class Snake_Game():
@@ -201,7 +201,7 @@ class Snake_Game():
         if self.mode == "human":
             assert self.screen is not None
             self.screen.blit(self.surf, (0, 0))
-            self.clock.tick(20)
+            self.clock.tick(15)
             pygame.display.update()
             
         elif self.mode == "rgb_array":

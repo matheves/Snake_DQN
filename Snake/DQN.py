@@ -27,9 +27,9 @@ class DQN(torch.nn.Module):
 
     def __init__(self, h, w, outputs):
         super(DQN, self).__init__()
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=16, kernel_size=4, stride=1)
+        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=16, kernel_size=8, stride=2)
         self.bn1 = torch.nn.BatchNorm2d(16)
-        self.conv2 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=1)
+        self.conv2 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=2)
         self.bn2 = torch.nn.BatchNorm2d(32)
         #self.conv3 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
         #self.bn3 = torch.nn.BatchNorm2d(32)
@@ -37,17 +37,17 @@ class DQN(torch.nn.Module):
         self.device = "cuda:0"
         # Number of Linear input connections depends on output of conv2d layers
         # and therefore the input image size, so compute it.
-        def conv2d_size_out(size, kernel_size = 3, stride = 2):
+        def conv2d_size_out(size, kernel_size = 6, stride = 2):
             return (size - (kernel_size - 1) - 1) // stride  + 1
 
         #convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
         #convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
 
-        convw = conv2d_size_out(conv2d_size_out(w))
-        convh = conv2d_size_out(conv2d_size_out(h))
+        convw = conv2d_size_out(conv2d_size_out(w, 8, 2), 4, 2)
+        convh = conv2d_size_out(conv2d_size_out(h, 8, 2), 4, 2)
 
         linear_input_size = convw * convh * 32
-        self.head = torch.nn.Linear(linear_input_size * 16, outputs)
+        self.head = torch.nn.Linear(linear_input_size , outputs)
 
     def forward(self, x):
         x = x.to(self.device)
@@ -63,7 +63,7 @@ class DQN_Snake:
     GAMMA = 0.95
     EPS_START = 0.995
     EPS_END = 0.01
-    EPS_DECAY = 200
+    EPS_DECAY = 2000
     TARGET_UPDATE = 10
     LEARNING_RATE = 0.00025
 
@@ -79,10 +79,10 @@ class DQN_Snake:
         self.step_done = 0
 
     def save_model(self):
-        torch.save(self.dqn.state_dict(), "./model.pt")
+        torch.save(self.dqn.state_dict(), "./sam_model.pt")
 
     def save_optimizer(self):
-        torch.save(self.optimizer.state_dict(), "./optimizer.pt")
+        torch.save(self.optimizer.state_dict(), "./sam_optimizer.pt")
 
     def load_model(self, path):
         self.dqn.load_state_dict(torch.load(path))
