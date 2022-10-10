@@ -5,8 +5,6 @@ Created on Thu Oct  6 11:18:57 2022
 @author: lele8
 """
 
-# -*- coding: utf-8 -*-
-
 import sys, pygame, random
 from enum import Enum
 import torch
@@ -26,11 +24,11 @@ class Action(Enum):
     LEFT = [0, -1]
     
 class Rewards(Enum):
-    DEATH = -300
-    ALIVE = 0
-    CLOSER = 2
-    FURTHER = -3
-    APPLE = 200
+    DEATH = -100
+    ALIVE = 1
+    CLOSER = 0
+    FURTHER = 0
+    APPLE = 0
 
 class Snake_Game():
 
@@ -122,7 +120,6 @@ class Snake_Game():
             if self.snake[-1] in self.snake[0:-2] or self.snake[-1][0] in [-1,self.width_grid] or self.snake[-1][1] in [-1,self.width_grid]:
                 self.surf.fill(self.BLACK)
                 self.game_over = True
-                print("Score:" + str(self.score))
                 if (self.score > self.max_score):
                     self.max_score = self.score
             lost_tail = self.snake.pop(0)
@@ -139,7 +136,6 @@ class Snake_Game():
         pygame.display.update()
 
     def quit(self):
-        print("session max score : ", self.max_score)
         pygame.quit()
 
     def get_events(self):
@@ -205,7 +201,7 @@ class Snake_Game():
         if self.mode == "human":
             assert self.screen is not None
             self.screen.blit(self.surf, (0, 0))
-            self.clock.tick(10)
+            self.clock.tick(20)
             pygame.display.update()
             
         elif self.mode == "rgb_array":

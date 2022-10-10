@@ -2,21 +2,30 @@ from DQN import DQN_Snake
 from snake import Action
 from snake import Snake_Game
 from matplotlib import pyplot as plt
-import pygame
 
 PANNEL_HEIGHT = 80
 WINDOW_WIDTH = 160
 BLOCKSIZE = 20
 TICK = 8
-NUM_EPISODE = 1000
+NUM_EPISODE = 200
+MODE = "Training" # Training or Eval
 
 game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "human")
 
 episode= 0
 x_change = 0
 y_change = 0
+score = []
+epoch = 1
 
 model = DQN_Snake(game.height_grid, game.width_grid, 4)
+#model.load_model("./model.pt")
+#model.load_optimizer("./optimizer.pt")
+
+if (MODE == "Training"):
+    model.dqn.train()
+else :
+    model.dqn.eval()
 
 
 while episode < NUM_EPISODE:
@@ -27,10 +36,15 @@ while episode < NUM_EPISODE:
         state, next_state, reward, done = game.step(list(Action)[action])
         model.memory.push(state, action.item(), next_state, reward, done)
         render = game.render()
+    model.train_model()
     episode += 1
-    if (episode % 5 == 0):
-        print("training day")
-        model.train_model()
+    score.append(game.score)
+    if (episode % 100 == 0):
+        model.save_model()
+        model.save_optimizer()
+        print("epoch ", epoch, " : mean score : ", sum(score) / len(score), " max score : ", max(score))
+        epoch += 1
+        score = []
     game.reset()
 game.quit()
 
