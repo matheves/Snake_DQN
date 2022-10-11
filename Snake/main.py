@@ -2,6 +2,8 @@ from DQN import DQN_Snake
 from snake import Action
 from snake import Snake_Game
 from matplotlib import pyplot as plt
+import os
+
 
 PANNEL_HEIGHT = 100
 WINDOW_WIDTH = 400
@@ -17,6 +19,7 @@ x_change = 0
 y_change = 0
 score = []
 epoch = 1
+os.environ['SDL_VIDEODRIVER'] = 'dummy'
 file = open("result.txt", "a")
 
 model = DQN_Snake(game.height_grid, game.width_grid, 4)
