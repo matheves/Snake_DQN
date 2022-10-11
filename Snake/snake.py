@@ -26,10 +26,10 @@ class Action(Enum):
     
 class Rewards(Enum):
     DEATH = -100
-    ALIVE = 1
-    CLOSER = 5
-    FURTHER = -5
-    APPLE = 0
+    ALIVE = 0
+    CLOSER = 1
+    FURTHER = -1
+    APPLE = 10
 
 class Snake_Game():
 

@@ -59,11 +59,11 @@ class DQN(torch.nn.Module):
 
 class DQN_Snake:
 
-    BATCH_SIZE = 500
+    BATCH_SIZE = 1024
     GAMMA = 0.95
     EPS_START = 0.995
     EPS_END = 0.01
-    EPS_DECAY = 2000
+    EPS_DECAY = 200000
     TARGET_UPDATE = 10
     LEARNING_RATE = 0.00025
 
