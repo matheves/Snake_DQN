@@ -10,6 +10,7 @@ from enum import Enum
 import torch
 import numpy as np
 import math
+import os
 
 class Case_Content(Enum):
     EMPTY = 1
@@ -48,7 +49,8 @@ class Snake_Game():
         self.mode = mode
         self.episode = -1
         self.max_score = 0
-        # Pygame init      
+        # Pygame init
+        os.environ['SDL_VIDEODRIVER'] = 'dummy'      
         pygame.init()
         pygame.display.init()
 
