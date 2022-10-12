@@ -52,6 +52,7 @@ class Snake_Game():
         # Pygame init
         os.environ['SDL_VIDEODRIVER'] = 'dummy'      
         #pygame.init()
+        pygame.font.init()
         pygame.display.init()
 
         if self.mode == "human":
