@@ -204,7 +204,7 @@ class Snake_Game():
         if self.mode == "human":
             assert self.screen is not None
             self.screen.blit(self.surf, (0, 0))
-            self.clock.tick(15)
+            self.clock.tick(500)
             pygame.display.update()
             
         elif self.mode == "rgb_array":
