@@ -51,7 +51,7 @@ class Snake_Game():
         self.max_score = 0
         # Pygame init
         os.environ['SDL_VIDEODRIVER'] = 'dummy'      
-        pygame.init()
+        #pygame.init()
         pygame.display.init()
 
         if self.mode == "human":
