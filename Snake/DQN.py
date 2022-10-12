@@ -27,6 +27,8 @@ class DQN(torch.nn.Module):
 
     def __init__(self, h, w, outputs):
         super(DQN, self).__init__()
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print('Using device:', self.device)
         self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=16, kernel_size=8, stride=2)
         self.bn1 = torch.nn.BatchNorm2d(16)
         self.conv2 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=2)
@@ -34,7 +36,6 @@ class DQN(torch.nn.Module):
         #self.conv3 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
         #self.bn3 = torch.nn.BatchNorm2d(32)
         #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = "cuda:0"
         # Number of Linear input connections depends on output of conv2d layers
         # and therefore the input image size, so compute it.
         def conv2d_size_out(size, kernel_size = 6, stride = 2):
@@ -69,8 +70,8 @@ class DQN_Snake:
 
     def __init__(self, height, width, n_actions):
         self.n_actions = n_actions
-        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.device = "cuda:0"
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        print('Using device:', self.device)
         self.episode_duration = []
         self.dqn = DQN(height, width, n_actions).to(self.device)
 
@@ -99,9 +100,9 @@ class DQN_Snake:
         if sample > eps_threshold:
             #return torch.argmax(self.dqn(state))
 
-            return torch.tensor([[torch.argmax(self.dqn(torch.unsqueeze(state, 0)))]], device=self.device, dtype=torch.int32)
+            return torch.tensor([[torch.argmax(self.dqn(torch.unsqueeze(state, 0)))]], device=self.device, dtype=torch.int32).to(self.device)
         else:
-            return torch.tensor([[random.randrange(self.n_actions)]], device=self.device, dtype=torch.int32)
+            return torch.tensor([[random.randrange(self.n_actions)]], device=self.device, dtype=torch.int32).to(self.device)
             #return torch.tensor(random.randrange(self.n_actions))
 
     def train_model(self):
@@ -149,7 +150,7 @@ class DQN_Snake:
         expected_state_action_values = torch.unsqueeze(expected_state_action_values, 1)
 
         # Compute Huber loss
-        loss = torch.nn.functional.smooth_l1_loss(state_action_values, expected_state_action_values)
+        loss = torch.nn.functional.smooth_l1_loss(state_action_values, expected_state_action_values).to(self.device)
 
         # Optimize the model
         self.optimizer.zero_grad()
