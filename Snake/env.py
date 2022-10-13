@@ -45,8 +45,8 @@ class Env:
 
     def empty_blocks(self):
         emptys = []
-        for i in range(self.size+1):
-            for j in range(self.size+1):
+        for i in range(1, self.size):
+            for j in range(1, self.size):
                 if(self.grid[i][j] == Case_Content.EMPTY.value):
                     emptys.append([i,j])
         return emptys   
