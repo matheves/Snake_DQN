@@ -36,8 +36,6 @@ while episode < NUM_EPISODE:
     state = game.grid
     action = [0, 0]
     while not game.game_over: 
-        print(game.grid)
-        print("----------------------------------------------------------------------------------")
         action = model.select_action(game.grid)
         state, next_state, reward, done = game.step(list(Action)[action])
         model.memory.push(state, action.item(), next_state, reward, done)
