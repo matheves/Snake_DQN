@@ -1,3 +1,4 @@
+from binascii import a2b_base64
 from numpy import dtype
 import torch
 import random
@@ -65,7 +66,6 @@ class DQN_Snake:
     EPS_START = 0.995
     EPS_END = 0.01
     EPS_DECAY = 200000
-    TARGET_UPDATE = 10
     LEARNING_RATE = 0.00025
 
     def __init__(self, height, width, n_actions):
@@ -158,4 +158,3 @@ class DQN_Snake:
         for param in self.dqn.parameters():
             param.grad.data.clamp_(-1, 1)
         self.optimizer.step()
-       

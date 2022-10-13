@@ -1,7 +1,8 @@
 from DQN import DQN_Snake
-from snake import Action
-from snake import Snake_Game
+from env import Action
+# from snake import Snake_Game
 from matplotlib import pyplot as plt
+import env
 
 
 
@@ -9,11 +10,11 @@ PANNEL_HEIGHT = 100
 WINDOW_WIDTH = 400
 BLOCKSIZE = 20
 TICK = 8
-NUM_EPISODE = 500000
+NUM_EPISODE = 1000000
 MODE = "Training" # Training or Eval
 
-game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "rgb_array")
-
+#game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "rgb_array")
+game = env.Env(8)
 episode= 0
 x_change = 0
 y_change = 0
@@ -21,7 +22,7 @@ score = []
 epoch = 1
 file = open("result.txt", "a")
 
-model = DQN_Snake(game.height_grid, game.width_grid, 4)
+model = DQN_Snake(game.size, game.size, 4)
 model.load_model("./sam_model.pt")
 model.load_optimizer("./sam_optimizer.pt")
 
@@ -35,10 +36,12 @@ while episode < NUM_EPISODE:
     state = game.grid
     action = [0, 0]
     while not game.game_over: 
+        print(game.grid)
+        print("----------------------------------------------------------------------------------")
         action = model.select_action(game.grid)
         state, next_state, reward, done = game.step(list(Action)[action])
         model.memory.push(state, action.item(), next_state, reward, done)
-        render = game.render()
+        #render = game.render()
     model.train_model()
     episode += 1
     score.append(game.score)
@@ -52,7 +55,7 @@ while episode < NUM_EPISODE:
         score = []
     game.reset()
 file.close()
-game.quit()
+#game.quit()
 
 
 '''
