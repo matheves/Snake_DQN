@@ -14,7 +14,7 @@ NUM_EPISODE = 1000000
 MODE = "Training" # Training or Eval
 
 #game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "rgb_array")
-game = env.Env(8)
+game = env.Env(20)
 episode= 0
 x_change = 0
 y_change = 0
