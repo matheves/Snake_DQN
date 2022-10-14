@@ -95,7 +95,7 @@ class Env:
         reward = torch.tensor(Rewards.ALIVE.value, device=self.device)
         self.move_snake(action)
         if self.iteration > 100:
-            reward = torch.tensor(Rewards.DEATH.value, device=self.device)
+            self.game_over = True
         if(self.game_over):
             reward = torch.tensor(Rewards.DEATH.value, device=self.device)
         
