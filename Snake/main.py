@@ -10,7 +10,7 @@ PANNEL_HEIGHT = 100
 WINDOW_WIDTH = 400
 BLOCKSIZE = 20
 TICK = 8
-NUM_EPISODE = 100000
+NUM_EPISODE = 150000
 MODE = "Training" # Training or Eval
 
 #game = Snake_Game(PANNEL_HEIGHT, WINDOW_WIDTH, BLOCKSIZE, "rgb_array")
@@ -23,8 +23,8 @@ epoch = 1
 file = open("result.txt", "a")
 
 model = DQN_Snake(game.size, game.size, 4)
-#model.load_model("./sam_model.pt")
-#model.load_optimizer("./sam_optimizer.pt")
+model.load_model("./sam_model.pt")
+model.load_optimizer("./sam_optimizer.pt")
 
 if (MODE == "Training"):
     model.dqn.train()
@@ -43,7 +43,7 @@ while episode < NUM_EPISODE:
     model.train_model()
     episode += 1
     score.append(game.score)
-    if (episode % 100 == 0):
+    if (episode % 1000 == 0):
         model.save_model()
         model.save_optimizer()
         result = "epoch : {} mean score : {} max score : {} \n".format(epoch, sum(score) / len(score), max(score))

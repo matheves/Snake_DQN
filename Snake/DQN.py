@@ -65,8 +65,8 @@ class DQN_Snake:
     BATCH_SIZE = 512
     GAMMA = 0.95
     EPS_START = 0.995
-    EPS_END = 0.01
-    EPS_DECAY = 20000
+    EPS_END = 0
+    EPS_DECAY = 50000
     LEARNING_RATE = 0.00025
 
     def __init__(self, height, width, n_actions):
