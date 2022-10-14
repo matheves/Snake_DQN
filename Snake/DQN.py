@@ -3,6 +3,7 @@ from numpy import dtype
 import torch
 import random
 import math
+import numpy as np
 from collections import namedtuple, deque
 from torch.autograd import Variable
 
@@ -61,11 +62,11 @@ class DQN(torch.nn.Module):
 
 class DQN_Snake:
 
-    BATCH_SIZE = 1024
+    BATCH_SIZE = 512
     GAMMA = 0.95
     EPS_START = 0.995
     EPS_END = 0.01
-    EPS_DECAY = 200000
+    EPS_DECAY = 20000
     LEARNING_RATE = 0.00025
 
     def __init__(self, height, width, n_actions):
@@ -99,10 +100,9 @@ class DQN_Snake:
         self.step_done += 1
         if sample > eps_threshold:
             #return torch.argmax(self.dqn(state))
-
-            return torch.tensor([[torch.argmax(self.dqn(torch.unsqueeze(state, 0)))]], device=self.device, dtype=torch.int32).to(self.device)
+            return torch.tensor([[torch.argmax(self.dqn(torch.unsqueeze(state, 0)))]], device=self.device, dtype=torch.int32)
         else:
-            return torch.tensor([[random.randrange(self.n_actions)]], device=self.device, dtype=torch.int32).to(self.device)
+            return torch.tensor([[random.randrange(self.n_actions)]], device=self.device, dtype=torch.int32)
             #return torch.tensor(random.randrange(self.n_actions))
 
     def train_model(self):
@@ -115,19 +115,19 @@ class DQN_Snake:
         batch = Transition(*zip(*transitions))
 
         non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-                                          batch.next_state)), dtype=bool)
+                                          batch.next_state)), dtype=bool, device=self.device)
 
-        # We don't want to backprop through the expected action values and volatile
+        # We don't want to backprop through the expected action values and volatile 
         # will save us on temporarily changing the model parameters'
         # requires_grad to False!
         #with torch.no_grad():
-        non_final_next_states = torch.stack(batch.next_state).to(self.device)
+        non_final_next_states = torch.stack(batch.next_state)
             
         #state_batch = batch.state #[[256][21][21]]
         #state_batch = np.array(list(batch.state), dtype=np.int32)
-        state_batch = torch.stack(batch.state).to(self.device)
-        action_batch = torch.tensor(batch.action).to(self.device)
-        reward_batch = torch.tensor(batch.reward).to(self.device)
+        state_batch = torch.stack(batch.state)
+        action_batch = torch.tensor(batch.action, device=self.device, dtype=torch.int64)
+        reward_batch = torch.tensor(batch.reward, device=self.device)
 
         
 
@@ -140,7 +140,7 @@ class DQN_Snake:
         state_action_values = self.dqn(state_batch).gather(1, action_batch)
 
         # Compute V(s_{t+1}) for all next states.
-        next_state_values = torch.zeros(self.BATCH_SIZE).type(torch.Tensor).to(self.device)
+        next_state_values = torch.zeros(self.BATCH_SIZE, device=self.device)
         next_state_values[non_final_mask] = self.dqn(non_final_next_states).max(1)[0]
         # Now, we don't want to mess up the loss with a volatile flag, so let's
         # clear it. After this, we'll just end up with a Variable that has
@@ -150,7 +150,7 @@ class DQN_Snake:
         expected_state_action_values = torch.unsqueeze(expected_state_action_values, 1)
 
         # Compute Huber loss
-        loss = torch.nn.functional.smooth_l1_loss(state_action_values, expected_state_action_values).to(self.device)
+        loss = torch.nn.functional.smooth_l1_loss(state_action_values, expected_state_action_values)
 
         # Optimize the model
         self.optimizer.zero_grad()

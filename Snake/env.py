@@ -37,8 +37,9 @@ class Env:
         self.size = size
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-        grid = [[1]*(self.size+1)]*(self.size+1)
-        self.grid = torch.FloatTensor(grid).to(self.device)
+        #grid = [[1]*(self.size+1)]*(self.size+1)
+        #self.grid = torch.Tensor(grid)
+        self.grid = torch.ones([21,21], device=self.device)
         print('Using device:', self.device)
         
         self.snake = [[self.size // 2, self.size // 2]]
@@ -89,14 +90,14 @@ class Env:
         prestate = self.grid.clone()
         head_before = self.snake[-1].copy()
         
-        reward = Rewards.ALIVE.value
+        reward = torch.tensor(Rewards.ALIVE.value, device=self.device)
         self.move_snake(action)
         
         if(self.game_over):
-            reward = Rewards.DEATH.value
+            reward = torch.tensor(Rewards.DEATH.value, device=self.device)
         
         elif(self.eaten):
-            reward = Rewards.APPLE.value
+            reward = torch.tensor(Rewards.APPLE.value, device=self.device)
             self.eaten = False
         else:
             if len(self.snake) < 5:
@@ -104,16 +105,16 @@ class Env:
                 head_after = self.snake[-1]
                 distance_after = self.calcul_distance(head_after, self.apple)
                 if distance_after < distance_before:
-                    reward = Rewards.CLOSER.value
+                    reward = torch.tensor(Rewards.CLOSER.value, device=self.device)
                 else:
-                    reward = Rewards.FURTHER.value
+                    reward = torch.tensor(Rewards.FURTHER.value, device=self.device)
             
             
         return prestate, self.grid, reward, self.game_over
 
     def reset(self):
 
-        self.grid = torch.ones(self.grid.size())
+        self.grid = torch.ones(self.grid.size(), device=self.device)
         # Init game attributes
         self.game_over = False
         self.score = 0
