@@ -31,6 +31,7 @@ class Env:
         self.eaten = False
         self.game_over = False
 
+        self.iteration = 0
         self.episode = 0
         self.max_score = 0
         self.score = 0
@@ -92,11 +93,13 @@ class Env:
         
         reward = torch.tensor(Rewards.ALIVE.value, device=self.device)
         self.move_snake(action)
-        
+        if self.iteration > 100:
+            reward = torch.tensor(Rewards.DEATH.value, device=self.device)
         if(self.game_over):
             reward = torch.tensor(Rewards.DEATH.value, device=self.device)
         
         elif(self.eaten):
+            self.iteration = 0
             reward = torch.tensor(Rewards.APPLE.value, device=self.device)
             self.eaten = False
         else:
@@ -118,6 +121,7 @@ class Env:
         # Init game attributes
         self.game_over = False
         self.score = 0
+        self.iteration = 0
         self.episode += 1
         # Create Snake
         self.snake = [[self.size // 2, self.size // 2]]
