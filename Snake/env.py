@@ -39,6 +39,7 @@ class Env:
 
         grid = [[1]*(self.size+1)]*(self.size+1)
         self.grid = torch.FloatTensor(grid).to(self.device)
+        print('Using device:', self.device)
         
         self.snake = [[self.size // 2, self.size // 2]]
         self.grid[self.size // 2][self.size // 2] = Case_Content.HEAD.value
