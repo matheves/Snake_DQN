@@ -90,6 +90,7 @@ class Env:
     def step(self, action):
         prestate = self.grid.clone()
         head_before = self.snake[-1].copy()
+        self.iteration += 1
         
         reward = torch.tensor(Rewards.ALIVE.value, device=self.device)
         self.move_snake(action)
