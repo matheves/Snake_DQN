@@ -18,18 +18,11 @@ class Case_Content(Enum):
     BODY = 2
     HEAD = 3
     APPLE = 4
-
-class Action(Enum):
-    STATIC = [0, 0]
-    DOWN = [1, 0]
-    UP = [-1, 0]
-    RIGHT = [0, 1]
-    LEFT = [0, -1]
     
 class Rewards(Enum):
     DEATH = -100
-    ALIVE = 0
-    CLOSER = 2
+    ALIVE = -1
+    CLOSER = 5
     APPLE = 100
 
 class Snake_Game():
@@ -49,6 +42,8 @@ class Snake_Game():
         self.eaten = False
         self.mode = mode
         self.episode = -1
+        self.iterations = 0
+        self.actions = [[1, 0], [-1, 0], [0, 1], [0, -1]]
         # Pygame init      
         pygame.init()
         pygame.display.init()
@@ -81,8 +76,12 @@ class Snake_Game():
     
     def create_apple(self):
         #self.drawRect(apple[0], apple[1], self.RED)
-        blocks = self.empty_blocks()
-        apple = random.choice(blocks)
+        #blocks = self.empty_blocks()
+        #apple = random.choice(blocks)
+        apple = self.snake[-1].copy()
+        apple[0] += 1
+        apple[1] += 1
+        
         self.grid[apple[0], apple[1]] = Case_Content.APPLE.value
         self.drawRect(apple[1], apple[0], self.RED)
         return apple
@@ -108,27 +107,24 @@ class Snake_Game():
         self.surf.blit(fontScore, (20, 20))
 
     def move_snake(self, action):
-        if (len(self.snake) > 1):
-            for block in self.snake:
-                self.grid[block[0], block[1]] = Case_Content.BODY.value
-
-        self.grid[self.snake[-1][0]+action.value[0], self.snake[-1][1]+action.value[1]] = Case_Content.HEAD.value
-        self.snake.append([self.snake[-1][0]+action.value[0], self.snake[-1][1]+action.value[1]])
+        
+        self.grid[self.snake[-1][0]+self.actions[action][0], self.snake[-1][1]+self.actions[action][1]] = Case_Content.HEAD.value
+        self.snake.append([self.snake[-1][0]+self.actions[action][0], self.snake[-1][1]+self.actions[action][1]])
         self.drawRect(self.snake[-1][1], self.snake[-1][0], self.GREEN_HEAD)
         if len(self.snake) > 1:    
             self.drawRect(self.snake[-2][1], self.snake[-2][0], self.GREEN)
         if (self.snake[-1] != self.apple):
             if self.snake[-1] in self.snake[0:-2] or self.snake[-1][0] in [-1,self.width_grid] or self.snake[-1][1] in [-1,self.width_grid]:
                 self.surf.fill(self.BLACK)
-                self.game_over = True
-                print("Score:" + str(self.score))
+                self.game_over = 1
+                #print("Score:" + str(self.score))
             lost_tail = self.snake.pop(0)
             self.grid[lost_tail[0], lost_tail[1]] = Case_Content.EMPTY.value
             self.drawRect(lost_tail[1], lost_tail[0],self.BLACK)
         else:
             self.eaten = True
             self.score += 1
-            self.drawScore()
+            #self.drawScore()
             self.grid[self.apple[0], self.apple[1]] = Case_Content.HEAD.value
             self.apple = self.create_apple()
 
@@ -142,7 +138,7 @@ class Snake_Game():
         return pygame.event.get()
     
     def reset(self):
-
+        
         self.height_grid = (self.height_screen - self.height_pannel) // self.block_size
         self.width_grid = self.width_screen // self.block_size
         
@@ -151,7 +147,8 @@ class Snake_Game():
         self.grid = torch.FloatTensor(grid)
 
         # Init game attributes
-        self.game_over = False
+        self.iterations = 0
+        self.game_over = 0
         self.score = 0
         self.episode += 1
         # Create Snake
@@ -163,29 +160,31 @@ class Snake_Game():
         self.apple = self.create_apple()
             
         
-        self.drawScore()
+        #self.drawScore()
         
         
     def calcul_distance(self, head, apple):
         return math.sqrt(pow(head[0] - apple[0], 2) + pow(head[1] - apple[1], 2))
         
     def step(self, action):
-        prestate = self.grid.clone()
+        prestate = self.render()
+        
         head_before = self.snake[-1].copy()
         
         reward = Rewards.ALIVE.value
         self.move_snake(action)
+        self.iterations += 1
         
-        
-
-        if(self.game_over):
+        if self.iterations > 100:
+            self.game_over = 1
+        if self.game_over:
             reward = Rewards.DEATH.value
         
-        elif(self.eaten):
+        elif self.eaten:
+            self.iterations = 0
             reward = Rewards.APPLE.value
             self.eaten = False
-        else:
-            if len(self.snake) < 5:
+        elif len(self.snake) < 5:
                 distance_before = self.calcul_distance(head_before, self.apple)
                 head_after = self.snake[-1]
                 distance_after = self.calcul_distance(head_after, self.apple)
@@ -193,19 +192,23 @@ class Snake_Game():
                     reward = Rewards.CLOSER.value
                 else:
                     reward = -Rewards.CLOSER.value
-            
-            
-        return prestate, self.grid, reward, self.game_over
+        return prestate, self.render(), reward, self.game_over, self.score
 
     def render(self):
         if self.mode == "human":
             assert self.screen is not None
             self.screen.blit(self.surf, (0, 0))
-            self.clock.tick(20)
+            self.clock.tick(1000)
             pygame.display.update()
             
         elif self.mode == "rgb_array":
-            return np.transpose(np.array(pygame.surfarray.pixels3d(self.surf)), axes=(1,0,2))
+            #return np.transpose(np.array(pygame.surfarray.pixels3d(self.surf)), axes=(1,0,2))
+            #img = pygame.surfarray.pixels3d(self.surf)
+            red = pygame.surfarray.array_red(self.surf)
+            green = pygame.surfarray.array_green(self.surf)
+            blue = pygame.surfarray.array_blue(self.surf)
+            
+            return [red, green, blue]
         else:
             print("mode inconnu, need : [human, rgb_array]")
         

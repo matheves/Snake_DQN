@@ -27,42 +27,45 @@ class DQN(torch.nn.Module):
 
     def __init__(self, h, w, outputs):
         super(DQN, self).__init__()
+        self.outputs = outputs
         self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=16, kernel_size=3, stride=2, padding=2)
         self.bn1 = torch.nn.BatchNorm2d(16)
         self.conv2 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, stride=2)
         self.bn2 = torch.nn.BatchNorm2d(32)
-        self.conv3 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
-        self.bn3 = torch.nn.BatchNorm2d(32)
+        #self.conv3 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
+        #self.bn3 = torch.nn.BatchNorm2d(32)
         #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
         self.device = "cpu"
         # Number of Linear input connections depends on output of conv2d layers
         # and therefore the input image size, so compute it.
         def conv2d_size_out(size, kernel_size = 3, stride = 2):
             return (size - (kernel_size - 1) - 1) // stride  + 1
+        
+        #convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
+        #convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
 
-        convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
-        convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
-
-        linear_input_size = convw * convh * 32
-        self.head = torch.nn.Linear(linear_input_size * 4, outputs)
+        #linear_input_size = convw * convh * 32
+        #self.head = torch.nn.Linear(linear_input_size * 4, outputs)
 
     def forward(self, x):
         x = x.to(self.device)
         x = torch.nn.functional.relu(self.bn1(self.conv1(x)))
-        x = torch.nn.functional.relu(self.bn2(self.conv2(x)))
-        x = torch.nn.functional.relu(self.bn3(self.conv3(x)))
+        # = torch.nn.functional.relu(self.bn2(self.conv2(x)))
+        x = torch.flatten(x, start_dim=1)
+        self.head = torch.nn.Linear(x.shape[1], self.outputs)
+        #x = torch.nn.functional.relu(self.bn3(self.conv3(x)))
         x = self.head(x.view(x.size(0), -1))
         return x
 
 class DQN_Snake:
 
-    BATCH_SIZE = 256
+    BATCH_SIZE = 32
     GAMMA = 0.999
     EPS_START = 0.9
     EPS_END = 0.05
-    EPS_DECAY = 100
+    EPS_DECAY = 100000
     TARGET_UPDATE = 10
-    LEARNING_RATE = 0.5
+    LEARNING_RATE = 0.9
 
     def __init__(self, height, width, n_actions):
         self.n_actions = n_actions
@@ -131,15 +134,16 @@ class DQN_Snake:
         # requires_grad=False
         # Compute the expected Q values
         expected_state_action_values = (next_state_values * self.GAMMA) + reward_batch #[n_batch][curennt_pred][prev_pred]
-
+        print(state_action_values)
+        #print(next_state_values)
         # Compute Huber loss
         loss = torch.nn.functional.smooth_l1_loss(state_action_values, expected_state_action_values)
 
         # Optimize the model
         self.optimizer.zero_grad()
         loss.backward()
-        for param in self.dqn.parameters():
-            param.grad.data.clamp_(-1, 1)
+        #for param in self.dqn.parameters():
+        #    param.grad.data.clamp_(-1, 1)
         self.optimizer.step()
         self.save()
 
