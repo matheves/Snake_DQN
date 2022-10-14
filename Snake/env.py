@@ -35,9 +35,10 @@ class Env:
         self.max_score = 0
         self.score = 0
         self.size = size
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         grid = [[1]*(self.size+1)]*(self.size+1)
-        self.grid = torch.FloatTensor(grid)
+        self.grid = torch.FloatTensor(grid).to(self.device)
         
         self.snake = [[self.size // 2, self.size // 2]]
         self.grid[self.size // 2][self.size // 2] = Case_Content.HEAD.value
