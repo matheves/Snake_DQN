@@ -43,7 +43,7 @@ while episode < NUM_EPISODE:
     model.train_model()
     episode += 1
     score.append(game.score)
-    if (episode % 500 == 0):
+    if (episode % 100 == 0):
         model.save_model()
         model.save_optimizer()
         result = "epoch : {} mean score : {} max score : {} \n".format(epoch, sum(score) / len(score), max(score))
