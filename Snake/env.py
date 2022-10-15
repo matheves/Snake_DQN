@@ -20,8 +20,8 @@ class Action(Enum):
 class Rewards(Enum):
     DEATH = -100
     ALIVE = 0
-    CLOSER = 1
-    FURTHER = -1
+    CLOSER = 0
+    FURTHER = 0
     APPLE = 10
 
 class Env:

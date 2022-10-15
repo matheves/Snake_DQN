@@ -66,7 +66,7 @@ class DQN_Snake:
     GAMMA = 0.95
     EPS_START = 0.995
     EPS_END = 0
-    EPS_DECAY = 50000
+    EPS_DECAY = 500
     LEARNING_RATE = 0.00025
 
     def __init__(self, height, width, n_actions):
