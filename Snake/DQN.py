@@ -15,9 +15,9 @@ class ReplayMemory(object):
     def __init__(self, capacity):
         self.memory = deque([],maxlen=capacity)
 
-    def push(self, *args):
+    def push(self, x):
         """Save a transition"""
-        self.memory.append(Transition(*args))
+        self.memory.append(x)
 
     def sample(self, batch_size):
         return random.sample(self.memory, batch_size)
@@ -27,58 +27,45 @@ class ReplayMemory(object):
 
 class DQN(torch.nn.Module):
 
-    def __init__(self, h, w, outputs):
+    def __init__(self, D_in, H, D_out):
         super(DQN, self).__init__()
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print('Using device:', self.device)
-        self.conv1 = torch.nn.Conv2d(in_channels=1, out_channels=16, kernel_size=8, stride=2)
-        self.bn1 = torch.nn.BatchNorm2d(16)
-        self.conv2 = torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=4, stride=2)
-        self.bn2 = torch.nn.BatchNorm2d(32)
-        #self.conv3 = torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, stride=2)
-        #self.bn3 = torch.nn.BatchNorm2d(32)
-        #self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        # Number of Linear input connections depends on output of conv2d layers
-        # and therefore the input image size, so compute it.
-        def conv2d_size_out(size, kernel_size = 6, stride = 2):
-            return (size - (kernel_size - 1) - 1) // stride  + 1
-
-        #convw = conv2d_size_out(conv2d_size_out(conv2d_size_out(w)))
-        #convh = conv2d_size_out(conv2d_size_out(conv2d_size_out(h)))
-
-        convw = conv2d_size_out(conv2d_size_out(w, 8, 2), 4, 2)
-        convh = conv2d_size_out(conv2d_size_out(h, 8, 2), 4, 2)
-
-        linear_input_size = convw * convh * 32
-        self.head = torch.nn.Linear(linear_input_size , outputs)
+        self.flatten = torch.nn.Flatten()
+        self.lin1 = torch.nn.Linear(D_in, H)
+        self.lin2 = torch.nn.Linear(H, D_out)
 
     def forward(self, x):
-        x = x.to(self.device)
-        x = torch.nn.functional.relu(self.bn1(self.conv1(x)))
-        x = torch.nn.functional.relu(self.bn2(self.conv2(x)))
-        #x = torch.nn.functional.relu(self.bn3(self.conv3(x)))
-        x = self.head(x.view(x.size(0), -1))
+        """
+          x : [batch_size, 1, height, width ]
+        """
+        x = x.flatten().to(self.device).float()
+        x = self.lin1(x)
+        x = torch.nn.functional.relu(x) 
+        x = self.lin2(x)
+    
         return x
 
 class DQN_Snake:
 
-    BATCH_SIZE = 512
+    BATCH_SIZE = 12
     GAMMA = 0.95
     EPS_START = 0.995
     EPS_END = 0.01
     EPS_DECAY = 20000
     LEARNING_RATE = 0.00025
 
-    def __init__(self, height, width, n_actions):
-        self.n_actions = n_actions
+    def __init__(self, D_in, H, D_out):
+        self.n_actions = D_out
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         print('Using device:', self.device)
         self.episode_duration = []
-        self.dqn = DQN(height, width, n_actions).to(self.device)
+        self.dqn = DQN(D_in, H, D_out).to(self.device)
 
         self.optimizer = torch.optim.Adam(self.dqn.parameters(), lr= self.LEARNING_RATE)
         self.memory = ReplayMemory(10000)
         self.step_done = 0
+        self.loss_fn = torch.nn.MSELoss()
 
     def save_model(self):
         torch.save(self.dqn.state_dict(), "./sam_model.pt")
@@ -94,13 +81,13 @@ class DQN_Snake:
 
     def select_action(self, state):
         sample = random.random()
-        state = torch.unsqueeze(state, 0)
         eps_threshold = self.EPS_END + (self.EPS_START - self.EPS_END) * \
             math.exp(-1. * self.step_done / self.EPS_DECAY)
         self.step_done += 1
         if sample > eps_threshold:
             #return torch.argmax(self.dqn(state))
-            return torch.tensor([[torch.argmax(self.dqn(torch.unsqueeze(state, 0)))]], device=self.device, dtype=torch.int32)
+            
+            return torch.tensor([[torch.argmax(self.dqn(state))]], device=self.device, dtype=torch.int32)
         else:
             return torch.tensor([[random.randrange(self.n_actions)]], device=self.device, dtype=torch.int32)
             #return torch.tensor(random.randrange(self.n_actions))
@@ -111,50 +98,44 @@ class DQN_Snake:
             return
         #print("Start training")
         transitions = self.memory.sample(self.BATCH_SIZE)
-
-        batch = Transition(*zip(*transitions))
-
-        non_final_mask = torch.tensor(tuple(map(lambda s: s is not None,
-                                          batch.next_state)), dtype=bool, device=self.device)
-
-        # We don't want to backprop through the expected action values and volatile 
-        # will save us on temporarily changing the model parameters'
-        # requires_grad to False!
-        #with torch.no_grad():
-        non_final_next_states = torch.stack(batch.next_state)
-            
-        #state_batch = batch.state #[[256][21][21]]
-        #state_batch = np.array(list(batch.state), dtype=np.int32)
-        state_batch = torch.stack(batch.state)
-        action_batch = torch.tensor(batch.action, device=self.device, dtype=torch.int64)
-        reward_batch = torch.tensor(batch.reward, device=self.device)
-
         
-
-        # Compute Q(s_t, a) - the model computes Q(s_t), then we select the
-        # columns of actions taken
-        state_batch = torch.unsqueeze(state_batch, 1)
-        action_batch = torch.unsqueeze(action_batch, 1)
-        non_final_next_states = torch.unsqueeze(non_final_next_states, 1)
-
-        state_action_values = self.dqn(state_batch).gather(1, action_batch)
-
-        # Compute V(s_{t+1}) for all next states.
-        next_state_values = torch.zeros(self.BATCH_SIZE, device=self.device)
-        next_state_values[non_final_mask] = self.dqn(non_final_next_states).max(1)[0]
-        # Now, we don't want to mess up the loss with a volatile flag, so let's
-        # clear it. After this, we'll just end up with a Variable that has
-        # requires_grad=False
-        # Compute the expected Q values
-        expected_state_action_values = (next_state_values * self.GAMMA) + reward_batch #[n_batch][curennt_pred][prev_pred]
-        expected_state_action_values = torch.unsqueeze(expected_state_action_values, 1)
-
-        # Compute Huber loss
-        loss = torch.nn.functional.smooth_l1_loss(state_action_values, expected_state_action_values)
-
-        # Optimize the model
+        states = torch.tensor([])
+        actions = torch.tensor([])
+        rewards = torch.tensor([])
+        next_Q_values = torch.tensor([])
+        dones = torch.tensor([])
+        
+        for t in transitions:
+            state = t[0]
+            action = t[1]
+            reward = t[2]
+            next_state = t[3]
+            done = t[4]
+            
+            #ajouter de la concat ou du stack de tensor
+            states = torch.cat((states,torch.unsqueeze(state,0)))
+            actions = torch.cat((actions,torch.unsqueeze(action,0)))
+            rewards = torch.cat((rewards,torch.unsqueeze(torch.tensor([reward]),0)))
+            next_Q_values = torch.cat((next_Q_values,torch.unsqueeze(self.dqn(next_state),0)))
+            dones = torch.cat((dones,torch.unsqueeze(torch.tensor([done]),0)))
+        
+        max_next_Q_values = torch.max(next_Q_values, axis=1)
+        
+        target_Q_values = (rewards +
+                           (1 - dones[max_next_Q_values.indices]) * self.GAMMA * max_next_Q_values.values)
+        target_Q_values = target_Q_values.reshape(-1, 1)
+        mask = torch.nn.functional.one_hot(actions.to(torch.int64), self.n_actions)
+        predict = self.dqn(states[0])
+        Q_values = torch.sum(predict * mask[0], axis=1, keepdim=True)
+        loss = self.loss_fn(target_Q_values, Q_values)
+        
+        for i in range(1, len(states)):
+            predict = self.dqn(states[i])
+            Q_values = torch.sum(predict * mask[i], axis=1, keepdim=True)
+            loss += self.loss_fn(target_Q_values, Q_values)
+        loss = torch.mean(loss)
         self.optimizer.zero_grad()
         loss.backward()
-        for param in self.dqn.parameters():
-            param.grad.data.clamp_(-1, 1)
         self.optimizer.step()
+        
+        #loss = torch.nn.functional.smooth_l1_loss(state_action_values, expected_state_action_values)

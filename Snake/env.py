@@ -22,7 +22,7 @@ class Rewards(Enum):
     ALIVE = 0
     CLOSER = 1
     FURTHER = -1
-    APPLE = 10
+    APPLE = 100
 
 class Env:
 
@@ -36,12 +36,11 @@ class Env:
         self.max_score = 0
         self.score = 0
         self.size = size
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
         #grid = [[1]*(self.size+1)]*(self.size+1)
         #self.grid = torch.Tensor(grid)
-        self.grid = torch.ones([21,21], device=self.device)
-        print('Using device:', self.device)
+        self.grid = torch.ones([21,21])
+
         
         self.snake = [[self.size // 2, self.size // 2]]
         self.grid[self.size // 2][self.size // 2] = Case_Content.HEAD.value
@@ -68,6 +67,7 @@ class Env:
 
         self.grid[self.snake[-1][0]+action.value[0], self.snake[-1][1]+action.value[1]] = Case_Content.HEAD.value
         self.snake.append([self.snake[-1][0]+action.value[0], self.snake[-1][1]+action.value[1]])
+        
         if (self.snake[-1] != self.apple):
             if self.snake[-1] in self.snake[0:-2] or self.snake[-1][0] in [-1,self.size] or self.snake[-1][1] in [-1,self.size]:
                 self.die()
@@ -87,21 +87,22 @@ class Env:
     def calcul_distance(self, head, apple):
         return math.sqrt(pow(head[0] - apple[0], 2) + pow(head[1] - apple[1], 2))
 
-    def step(self, action):
-        prestate = self.grid.clone()
+    def step(self, action, state):
+        prestate = state.clone()
         head_before = self.snake[-1].copy()
         self.iteration += 1
         
-        reward = torch.tensor(Rewards.ALIVE.value, device=self.device)
+        reward = torch.tensor(Rewards.ALIVE.value)
         self.move_snake(action)
         if self.iteration > 100:
             self.game_over = True
         if(self.game_over):
-            reward = torch.tensor(Rewards.DEATH.value, device=self.device)
+            reward = torch.tensor(Rewards.DEATH.value)
+            return prestate, prestate, reward, self.game_over
         
         elif(self.eaten):
             self.iteration = 0
-            reward = torch.tensor(Rewards.APPLE.value, device=self.device)
+            reward = torch.tensor(Rewards.APPLE.value)
             self.eaten = False
         else:
             if len(self.snake) < 5:
@@ -109,16 +110,46 @@ class Env:
                 head_after = self.snake[-1]
                 distance_after = self.calcul_distance(head_after, self.apple)
                 if distance_after < distance_before:
-                    reward = torch.tensor(Rewards.CLOSER.value, device=self.device)
+                    reward = torch.tensor(Rewards.CLOSER.value)
                 else:
-                    reward = torch.tensor(Rewards.FURTHER.value, device=self.device)
-            
-            
-        return prestate, self.grid, reward, self.game_over
+                    reward = torch.tensor(Rewards.FURTHER.value)
+                
+        
+        return prestate, self.get_state(), reward, self.game_over
+
+    def get_state(self):
+
+        directions = [(-1, -1), (-1, 0), (-1, 1), (0, 1), (1, 1), (1, 0), (1, -1), (0, -1)]
+        state = []
+        for x, y in directions:
+            wall_distance = 0
+            apple_distance = 0
+            body_distance = 0
+            new_x = self.snake[-1][0] + x
+            new_y = self.snake[-1][1] + y
+            distance = 1
+            while wall_distance == 0:
+                if new_x in [-1, self.size+1] or new_y in [-1, self.size+1]:
+                    wall_distance = distance
+                else:
+                    if [new_x, new_y] == self.apple:
+                        apple_distance = distance
+                    elif self.grid[new_x][new_y] == Case_Content.BODY:
+                        body_distance = distance
+                    distance += 1
+                    new_x += x
+                    new_y += y
+
+            state.append([wall_distance, apple_distance, body_distance])
+            #state.append(wall_distance)
+            #state.append(apple_distance)
+            #state.append(body_distance)
+        
+        return torch.tensor(state, dtype=torch.long)
 
     def reset(self):
 
-        self.grid = torch.ones(self.grid.size(), device=self.device)
+        self.grid = torch.ones(self.grid.size())
         # Init game attributes
         self.game_over = False
         self.score = 0

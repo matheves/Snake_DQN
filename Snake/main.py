@@ -22,7 +22,7 @@ score = []
 epoch = 1
 file = open("result.txt", "a")
 
-model = DQN_Snake(game.size, game.size, 4)
+model = DQN_Snake(24, 18, 4)
 #model.load_model("./sam_model.pt")
 #model.load_optimizer("./sam_optimizer.pt")
 
@@ -33,12 +33,15 @@ else :
 
 
 while episode < NUM_EPISODE:
-    state = game.grid
+    state = game.get_state()
     action = [0, 0]
     while not game.game_over: 
-        action = model.select_action(game.grid)
-        state, next_state, reward, done = game.step(list(Action)[action])
-        model.memory.push(state, action, next_state, reward, done)
+        action = model.select_action(state)
+        state, next_state, reward, done = game.step(list(Action)[action], state)
+        
+        model.memory.push([state, action, reward, next_state, done])
+        
+        state = next_state
         #render = game.render()
     model.train_model()
     episode += 1
