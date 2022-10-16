@@ -40,7 +40,7 @@ class Env:
         #grid = [[1]*(self.size+1)]*(self.size+1)
         #self.grid = torch.Tensor(grid)
         self.grid = torch.ones([21,21])
-
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         
         self.snake = [[self.size // 2, self.size // 2]]
         self.grid[self.size // 2][self.size // 2] = Case_Content.HEAD.value
@@ -115,7 +115,7 @@ class Env:
                     reward = torch.tensor(Rewards.FURTHER.value)
                 
         
-        return prestate, self.get_state(), reward, self.game_over
+        return prestate, self.get_state(), reward.to(self.device), self.game_over
 
     def get_state(self):
 
@@ -145,7 +145,7 @@ class Env:
             #state.append(apple_distance)
             #state.append(body_distance)
         
-        return torch.tensor(state, dtype=torch.long)
+        return torch.tensor(state, dtype=torch.long).to(self.device)
 
     def reset(self):
 

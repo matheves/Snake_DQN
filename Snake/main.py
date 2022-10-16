@@ -21,6 +21,7 @@ y_change = 0
 score = []
 epoch = 1
 file = open("result.txt", "a")
+file_score = open("score.txt", "a")
 
 model = DQN_Snake(24, 18, 4)
 #model.load_model("./sam_model.pt")
@@ -30,7 +31,6 @@ if (MODE == "Training"):
     model.dqn.train()
 else :
     model.dqn.eval()
-
 
 while episode < NUM_EPISODE:
     state = game.get_state()
@@ -46,12 +46,16 @@ while episode < NUM_EPISODE:
     model.train_model()
     episode += 1
     score.append(game.score)
-    if (episode % 100 == 0):
+    if (episode % 100 == 0):   
         model.save_model()
         model.save_optimizer()
         result = "epoch : {} mean score : {} max score : {} \n".format(epoch, sum(score) / len(score), max(score))
         print(result)
-        file.write(result)
+        #file.write(result)
+        score_print = ""
+        for i in range(len(score)):
+            score_print += str(score[i]) + ",\n"
+        file_score.write(score_print)
         epoch += 1
         score = []
     game.reset()

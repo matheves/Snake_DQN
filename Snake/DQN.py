@@ -99,11 +99,11 @@ class DQN_Snake:
         #print("Start training")
         transitions = self.memory.sample(self.BATCH_SIZE)
         
-        states = torch.tensor([])
-        actions = torch.tensor([])
-        rewards = torch.tensor([])
-        next_Q_values = torch.tensor([])
-        dones = torch.tensor([])
+        states = torch.tensor([]).to(self.device)
+        actions = torch.tensor([]).to(self.device)
+        rewards = torch.tensor([]).to(self.device)
+        next_Q_values = torch.tensor([]).to(self.device)
+        dones = torch.tensor([]).to(self.device)
         
         for t in transitions:
             state = t[0]
@@ -115,24 +115,28 @@ class DQN_Snake:
             #ajouter de la concat ou du stack de tensor
             states = torch.cat((states,torch.unsqueeze(state,0)))
             actions = torch.cat((actions,torch.unsqueeze(action,0)))
-            rewards = torch.cat((rewards,torch.unsqueeze(torch.tensor([reward]),0)))
+            rewards = torch.cat((rewards,torch.unsqueeze(torch.tensor([reward]).to(self.device),0)))
             next_Q_values = torch.cat((next_Q_values,torch.unsqueeze(self.dqn(next_state),0)))
-            dones = torch.cat((dones,torch.unsqueeze(torch.tensor([done]),0)))
+            dones = torch.cat((dones,torch.unsqueeze(torch.tensor([done]).to(self.device),0)))
         
         max_next_Q_values = torch.max(next_Q_values, axis=1)
         
-        target_Q_values = (rewards +
+        target_Q_values_tmp = (rewards +
                            (1 - dones[max_next_Q_values.indices]) * self.GAMMA * max_next_Q_values.values)
-        target_Q_values = target_Q_values.reshape(-1, 1)
+        target_Q_values = torch.tensor([]).to(self.device)
+        for i in target_Q_values_tmp:
+            target_Q_values = torch.cat((target_Q_values, torch.unsqueeze(torch.max(i), 0)))
         mask = torch.nn.functional.one_hot(actions.to(torch.int64), self.n_actions)
         predict = self.dqn(states[0])
-        Q_values = torch.sum(predict * mask[0], axis=1, keepdim=True)
-        loss = self.loss_fn(target_Q_values, Q_values)
+        Q_value = torch.sum(predict * mask[0], axis=1, keepdim=True)
+        Q_values = torch.tensor(torch.unsqueeze(torch.max(Q_value), 0)).to(self.device)
         
         for i in range(1, len(states)):
             predict = self.dqn(states[i])
-            Q_values = torch.sum(predict * mask[i], axis=1, keepdim=True)
-            loss += self.loss_fn(target_Q_values, Q_values)
+            Q_value = torch.sum(predict * mask[i], axis=1, keepdim=True)
+            Q_values = torch.cat((Q_values, torch.unsqueeze(torch.max(Q_value), 0)))
+            
+        loss =self.loss_fn(target_Q_values, Q_values)
         loss = torch.mean(loss)
         self.optimizer.zero_grad()
         loss.backward()
